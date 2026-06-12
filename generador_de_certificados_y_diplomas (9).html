@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suite de Certificación y Diplomas — AKADEM</title>
+  
+  <!-- Tailwind CSS para diseño fluido del panel administrativo -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- QRCode.js para generación dinámica y sin dependencias externas de códigos QR -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    /* Paleta Corporativa oficial según el Manual de Marca de AKADEM */
+    :root {
+      --orange: #E8490F;
+      --dark: #2D3142;
+      --light: #F8F7F4;
+      --white: #FFFFFF;
+      --gray: #6B6F7E;
+      --lightgray: #ECECEC;
+      --orange-light: rgba(232, 73, 15, 0.1);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #0f121a;
+      color: var(--white);
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Contenedor Base unificado (Proporción exacta A4 Horizontal 1056x747px) */
+    .document-container {
+      width: 1056px;
+      height: 747px;
+      position: relative;
+      background: var(--white);
+      color: var(--dark);
+      box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+      border-radius: 4px;
+      overflow: hidden;
+      transform-origin: top center;
+      box-sizing: border-box;
+    }
+
+    /* ========================================================
+       ESTILOS EXCLUSIVOS DEL CERTIFICADO TÉCNICO
+       ======================================================== */
+    .cert-corner {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border: 3px solid var(--orange);
+      z-index: 11;
+    }
+    .corner-tl { top: 12px; left: 12px; border-right: none; border-bottom: none; }
+    .corner-tr { top: 12px; right: 12px; border-left: none; border-bottom: none; }
+    .corner-bl { bottom: 12px; left: 12px; border-right: none; border-top: none; }
+    .corner-br { bottom: 12px; right: 12px; border-left: none; border-top: none; }
+
+    .cert-border-outer {
+      position: absolute;
+      top: 16px; left: 16px; right: 16px; bottom: 16px;
+      border: 2px solid var(--dark);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .cert-border-inner {
+      position: absolute;
+      top: 22px; left: 22px; right: 22px; bottom: 22px;
+      border: 1px solid var(--orange);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .cert-watermark-owl {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 420px;
+      height: 420px;
+      opacity: 0.035;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .cert-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9px;
+      line-height: 1.15;
+    }
+
+    .cert-table th {
+      background-color: var(--dark);
+      color: var(--white);
+      text-transform: uppercase;
+      font-size: 8px;
+      letter-spacing: 0.04em;
+      padding: 4px 6px;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    .cert-table td {
+      padding: 3.5px 6px;
+      border-bottom: 1px solid var(--lightgray);
+    }
+
+    .cert-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .cert-table tr:nth-child(even) td {
+      background-color: rgba(248, 247, 244, 0.5);
+    }
+
+
+    /* ========================================================
+       ESTILOS EXCLUSIVOS DEL DIPLOMA ACADÉMICO
+       ======================================================== */
+    .diploma-border-gold {
+      position: absolute;
+      top: 22px; left: 22px; right: 22px; bottom: 22px;
+      border: 1px solid var(--orange);
+      z-index: 10;
+    }
+
+    .diploma-border-dark {
+      position: absolute;
+      top: 28px; left: 28px; right: 28px; bottom: 28px;
+      border: 4px solid var(--dark);
+      z-index: 10;
+    }
+
+    .diploma-watermark-owl {
+      position: absolute;
+      bottom: -80px;
+      right: -80px;
+      width: 450px;
+      opacity: 0.03;
+      transform: rotate(-15deg);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+
+    /* ========================================================
+       SISTEMA DE IMPRESIÓN DINÁMICO (LOTE & INDIVIDUAL)
+       ======================================================== */
+    /* Posicionado de forma segura fuera del viewport en modo visualizador */
+    #bulk-print-container {
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+      width: 1056px;
+      height: 747px;
+      overflow: hidden;
+      z-index: -100;
+    }
+
+    @media print {
+      html, body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        width: 297mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+
+      /* Ocultar absolutamente la estructura web en la impresión */
+      body.print-all-mode > header,
+      body.print-all-mode > main,
+      body.print-all-mode > #custom-modal {
+        display: none !important;
+      }
+
+      /* Mostrar únicamente el contenedor de impresión unificado */
+      body.print-all-mode #bulk-print-container {
+        display: block !important;
+        position: static !important;
+        left: auto !important;
+        top: auto !important;
+        width: 297mm !important;
+        height: auto !important;
+        overflow: visible !important;
+        z-index: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .print-all-page {
+        width: 297mm !important;
+        height: 209.5mm !important; /* Ligeramente menor a 210mm para evitar desbordamiento por redondeo de píxeles */
+        page-break-after: always !important;
+        break-after: page !important;
+        position: relative !important;
+        box-sizing: border-box !important;
+        background: #ffffff !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+      }
+
+      .print-all-page:last-child {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+
+      @page {
+        size: A4 landscape;
+        margin: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col relative">
+
+  <!-- Modal Personalizado para Alertas / Notificaciones -->
+  <div id="custom-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+    <div class="bg-[#1e2230] border border-gray-700 w-full max-w-md rounded-xl p-6 shadow-2xl space-y-4">
+      <div class="flex items-center gap-3">
+        <div id="modal-icon" class="w-10 h-10 rounded-full bg-orange-600/20 text-orange-500 flex items-center justify-center text-lg">💡</div>
+        <h4 id="modal-title" class="text-base font-bold text-white uppercase tracking-wider">Notificación de Akadem</h4>
+      </div>
+      <p id="modal-message" class="text-xs text-gray-300 leading-relaxed"></p>
+      <div class="flex justify-end pt-2">
+        <button onclick="closeCustomModal()" class="bg-[#E8490F] hover:bg-orange-700 text-white font-bold text-xs py-2 px-6 rounded transition-all">
+          Aceptar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Encabezado Principal / Control de Impresión y Selección Global -->
+  <header class="no-print bg-[#2D3142] border-b border-gray-700 px-6 py-3 flex items-center justify-between z-50 shadow-md">
+    <div class="flex items-center gap-3">
+      <!-- Isotipo oficial vectorizado de AKADEM -->
+      <svg width="34" height="34" viewBox="0 0 60 60" fill="none" class="flex-shrink-0">
+        <path d="M30 8L18 18L15 38L30 52L45 38L42 18Z" stroke="#fff" stroke-width="2.5" fill="none"/>
+        <path d="M18 18L10 14L14 24L18 26" stroke="#E8490F" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+        <path d="M42 18L50 14L46 24L42 26" stroke="#E8490F" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+        <ellipse cx="22" cy="22" rx="6" ry="6" stroke="#E8490F" stroke-width="2" fill="none"/>
+        <ellipse cx="38" cy="22" rx="6" ry="6" stroke="#E8490F" stroke-width="2" fill="none"/>
+        <ellipse cx="22" cy="22" rx="3" ry="3" fill="#E8490F"/>
+        <ellipse cx="38" cy="22" rx="3" ry="3" fill="#E8490F"/>
+        <path d="M27 26L30 30L33 26" stroke="#E8490F" stroke-width="2" fill="none" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <h1 class="text-base font-extrabold tracking-wider leading-none mb-0.5"><span class="text-[#E8490F]">AKA</span>DEM</h1>
+        <p class="text-[8px] text-gray-400 font-bold uppercase tracking-widest">Suite Integral de Certificaciones & Diplomas</p>
+      </div>
+    </div>
+    
+    <!-- Botonera de impresión masiva y selectiva -->
+    <div class="flex items-center gap-3">
+      <!-- Acciones Individuales -->
+      <div class="flex items-center gap-1.5">
+        <span class="text-[10px] uppercase text-gray-400 font-black tracking-wider hidden lg:inline">Individual:</span>
+        <button onclick="printActiveDocument()" class="bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold py-1.5 px-3 rounded shadow transition-all flex items-center gap-1" title="Imprime solo el documento activo en pantalla para este alumno">
+          <span>📄</span> Imprimir Activo
+        </button>
+        <button onclick="printActiveBoth()" class="bg-gray-700 hover:bg-orange-600 text-white text-xs font-bold py-1.5 px-3 rounded shadow transition-all flex items-center gap-1" title="Genera un único PDF de 2 páginas con Certificado + Diploma para el alumno activo">
+          <span>✨</span> Cert + Dipl (Ambos)
+        </button>
+      </div>
+
+      <div class="h-6 w-[1px] bg-gray-700"></div>
+
+      <!-- Acciones de Lote -->
+      <div class="flex items-center gap-1.5">
+        <span class="text-[10px] uppercase text-gray-400 font-black tracking-wider hidden lg:inline">En Lote:</span>
+        <button onclick="printBatch('certificado')" class="bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white text-xs font-bold py-1.5 px-3 rounded shadow transition-all flex items-center gap-1">
+          <span>🗂</span> Certificados
+        </button>
+        <button onclick="printBatch('diploma')" class="bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white text-xs font-bold py-1.5 px-3 rounded shadow transition-all flex items-center gap-1">
+          <span>🎓</span> Diplomas
+        </button>
+        <button onclick="printBatch('ambos')" class="bg-[#E8490F] hover:bg-orange-700 text-white text-xs font-bold py-1.5 px-4 rounded shadow transition-all flex items-center gap-1.5" title="Genera un PDF con Certificado + Diploma intercalados para todos los alumnos marcados">
+          <span>🔥</span> Cert + Dipl Masivo
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Cuerpo de Trabajo -->
+  <main class="flex-1 flex overflow-hidden">
+    
+    <!-- PANEL DE CONTROL (Izquierda) -->
+    <aside class="no-print w-[400px] bg-[#1a1d26] border-r border-gray-800 flex flex-col flex-shrink-0 z-30 shadow-2xl">
+      
+      <!-- Navegación de Pestañas del Panel de Control -->
+      <div class="flex bg-[#12151e] border-b border-gray-800 text-[10px] font-bold uppercase tracking-wider text-center">
+        <button onclick="switchTab('tab-alumnos')" id="btn-tab-alumnos" class="flex-1 py-3 text-[#E8490F] border-b-2 border-[#E8490F] transition-all">
+          👥 Alumnos
+        </button>
+        <button onclick="switchTab('tab-temario')" id="btn-tab-temario" class="flex-1 py-3 text-gray-400 border-b-2 border-transparent hover:text-white transition-all">
+          📚 Temario (Cert.)
+        </button>
+        <button onclick="switchTab('tab-firmas')" id="btn-tab-firmas" class="flex-1 py-3 text-gray-400 border-b-2 border-transparent hover:text-white transition-all">
+          ✍️ Firmas y Config.
+        </button>
+      </div>
+
+      <!-- Contenedores de las Pestañas -->
+      <div class="flex-1 overflow-y-auto p-5 space-y-5">
+        
+        <!-- PESTAÑA ALUMNOS -->
+        <div id="tab-alumnos" class="space-y-4">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest">Cola de Alumnos</h3>
+              <span id="students-counter" class="bg-[#E8490F] text-white text-[9px] font-bold px-2 py-0.5 rounded-full">3 Cargados</span>
+            </div>
+            
+            <input type="text" id="student-search" placeholder="🔍 Buscar alumno..." class="w-full bg-[#12151e] border border-gray-700 rounded px-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#E8490F] mb-3">
+            
+            <!-- Controles de Selección Masiva (Uno, Varios o Todos) -->
+            <div class="flex items-center justify-between bg-[#12151e] px-3 py-2 border border-gray-800 rounded mb-2 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+              <span>Selección para impresión lote:</span>
+              <div class="flex gap-2">
+                <button onclick="toggleAllSelection(true)" class="text-orange-500 hover:text-orange-400">Marcar Todos</button>
+                <span>•</span>
+                <button onclick="toggleAllSelection(false)" class="text-gray-500 hover:text-gray-300">Quitar Todos</button>
+              </div>
+            </div>
+
+            <div id="students-list" class="max-h-[160px] overflow-y-auto border border-gray-700 rounded bg-[#12151e] divide-y divide-gray-800">
+              <!-- Elementos generados dinámicamente con checkboxes individuales -->
+            </div>
+          </div>
+
+          <div class="border-t border-gray-800 pt-3">
+            <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Carga Masiva (Alumnos)</h3>
+            <div class="space-y-2.5">
+              <div>
+                <label class="block text-[9px] text-gray-400 mb-1">Cargar CSV</label>
+                <input type="file" id="csv-file-input" accept=".csv" class="w-full text-xs text-gray-400 file:mr-3 file:py-1 file:px-2.5 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-orange-600 file:text-white hover:file:bg-orange-700 cursor-pointer">
+              </div>
+              <div>
+                <label class="block text-[9px] text-gray-400 mb-1">Pegar desde Excel (Nombre, RUT, % Teo, % Prac, Horas, Fecha, QR)</label>
+                <textarea id="bulk-paste-input" rows="3" class="w-full bg-[#12151e] border border-gray-700 rounded p-2 text-[10px] font-mono text-white focus:outline-none focus:border-[#E8490F]" placeholder="Jorge Barraza,10.219.259-1,100%,100%,40,11 de Junio,https://url.cl"></textarea>
+              </div>
+              <button onclick="parseBulkInput()" class="w-full bg-[#E8490F] hover:bg-orange-700 text-white text-[11px] font-bold py-1.5 rounded transition-all">
+                Procesar e Importar
+              </button>
+            </div>
+          </div>
+
+          <div class="border-t border-gray-800 pt-3 space-y-2.5">
+            <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest">Editor de Alumno Activo</h3>
+            <div>
+              <label class="block text-[9px] text-gray-400 uppercase">Nombre</label>
+              <input type="text" id="edit-active-name" class="w-full bg-[#232733] border border-gray-600 rounded px-2.5 py-1 text-xs text-white focus:outline-none">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[9px] text-gray-400 uppercase">RUT</label>
+                <input type="text" id="edit-active-rut" class="w-full bg-[#232733] border border-gray-600 rounded px-2.5 py-1 text-xs text-white focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[9px] text-gray-400 uppercase">Horas del Curso</label>
+                <input type="text" id="edit-active-hours" class="w-full bg-[#232733] border border-gray-600 rounded px-2.5 py-1 text-xs text-white text-center focus:outline-none">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[9px] text-gray-400 uppercase">Aprob. Teórica</label>
+                <input type="text" id="edit-active-score-teorico" class="w-full bg-[#232733] border border-gray-600 rounded px-2.5 py-1 text-xs text-white text-center focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[9px] text-gray-400 uppercase">Aprob. Práctica</label>
+                <input type="text" id="edit-active-score-practico" class="w-full bg-[#232733] border border-gray-600 rounded px-2.5 py-1 text-xs text-white text-center focus:outline-none">
+              </div>
+            </div>
+            <div>
+              <label class="block text-[9px] text-gray-400 uppercase">Fecha Individual</label>
+              <input type="text" id="edit-active-date" class="w-full bg-[#232733] border border-gray-600 rounded px-2.5 py-1 text-xs text-white focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-[9px] text-gray-400 uppercase">URL Enlace QR</label>
+              <input type="text" id="edit-active-qr" class="w-full bg-[#232733] border border-gray-600 rounded px-2.5 py-1 text-xs text-white focus:outline-none">
+            </div>
+          </div>
+        </div>
+
+        <!-- PESTAÑA TEMARIO -->
+        <div id="tab-temario" class="space-y-4 hidden">
+          <div>
+            <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Información del Curso</h3>
+            <div class="space-y-2.5">
+              <div>
+                <label class="block text-[10px] text-gray-400">Cargo / Especialidad</label>
+                <input type="text" id="input-course-name" value="AYUDANTE DE SONDAJE" class="w-full bg-[#232733] border border-gray-600 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none">
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-400">Sistemas / Equipos Evaluados</label>
+                <input type="text" id="input-systems-name" value="CS 3001 / HANDLER / ROD SLOOP" class="w-full bg-[#232733] border border-gray-600 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none">
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t border-gray-800 pt-3">
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Temario Teórico (Certificado)</label>
+            <textarea id="input-theoretic-list" rows="5" class="w-full bg-[#12151e] border border-gray-700 rounded p-2 text-xs text-white focus:outline-none">Revisión e inspección de funcionalidad de comandos de desplazamiento de vigas delanteras y traseras.
+Bajar estabilizadores hidráulicos hasta hacer contacto con almohadillas para posicionar Rod Sloop a piso.
+Desmontar seguros (pasadores delanteros y traseros) de parilla pisadera de desplazamiento del ayudante.
+Accionar mando final de parrilla hidráulica para asentarla correctamente.
+Inclinación de cama Rod Sloop para agregar herramienta a la columna o retirar barras del pozo.
+Retirar o montar pletinas de acero traseras y delanteras del Rod Sloop.
+Verificación de paradas de emergencia, interlok (rotación cero).</textarea>
+          </div>
+
+          <div class="border-t border-gray-800 pt-3">
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Temario Práctico (Certificado)</label>
+            <textarea id="input-practical-list" rows="5" class="w-full bg-[#12151e] border border-gray-700 rounded p-2 text-xs text-white focus:outline-none">Desmontar de alojamiento seguros de extensiones de los estabilizadores delanteros y traseros del Rod Sloop.
+Nivelar Rod Sloop a piso inicialmente y luego nivelar acorde a los grados de trabajo.
+Segregar área para hacer bajar la parrilla de desplazamiento del ayudante.
+Instalar estabilizadores de parrilla del ayudante.
+Realizar basculación bajo el borde de la barrera de seguridad.
+Rod Handler en posición vertical y equipo detenido y bloqueado.
+Gama operacional de armado de estructura del Rod Sloop and barreras duras.</textarea>
+          </div>
+
+          <div class="border-t border-gray-800 pt-3">
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Equipos (Certificado)</label>
+            <textarea id="input-equipments-list" rows="3" class="w-full bg-[#12151e] border border-gray-700 rounded p-2 text-xs font-mono text-white focus:outline-none">CS 3001,EPIROC
+ROD HANDLER,MINING PARTS
+ROD SLOOP,MINING PARTS
+PLANTA DE LODOS,SAFEDRILL
+MESA SACA TESTIGO,CHRISTENSEN</textarea>
+          </div>
+        </div>
+
+        <!-- PESTAÑA FIRMAS -->
+        <div id="tab-firmas" class="space-y-4 hidden">
+          <div>
+            <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Representantes y Firmas</h3>
+            <div class="space-y-3">
+              
+              <!-- Firma Izquierda -->
+              <div class="bg-[#12151e] p-3 rounded border border-gray-800 space-y-2">
+                <label class="block text-[10px] text-gray-400 uppercase font-black">Firma Izquierda (Instructor)</label>
+                <input type="text" id="input-firm-left-name" value="Bernardo Córdova H." class="w-full bg-[#232733] border border-gray-600 rounded px-2.5 py-1 text-xs text-white focus:outline-none">
+                <input type="text" id="input-firm-left-charge" value="Instructor Geotec" class="w-full bg-[#232733] border border-gray-600 rounded px-2.5 py-1 text-xs text-white focus:outline-none">
+                
+                <div class="pt-1">
+                  <label class="block text-[9px] text-gray-500 uppercase mb-1 font-bold">Subir Imagen Firma (PNG/JPG)</label>
+                  <input type="file" id="firm-left-file" accept="image/*" onchange="handleSignatureUpload(event, 'left')" class="w-full text-[10px] text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[9px] file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
+                </div>
+                
+                <!-- Preview Firma Izquierda subida -->
+                <div id="container-preview-firm-left" class="hidden flex items-center justify-between bg-[#1e2230] p-1.5 rounded mt-2 border border-gray-700">
+                  <img id="preview-firm-left" class="max-h-8 object-contain bg-white rounded p-0.5" src="" alt="Firma Izquierda">
+                  <button onclick="removeSignature('left')" class="text-red-500 hover:text-red-400 text-[10px] font-bold px-2">Quitar</button>
+                </div>
+              </div>
+              
+              <!-- Firma Derecha -->
+              <div class="bg-[#12151e] p-3 rounded border border-gray-800 space-y-2">
+                <label class="block text-[10px] text-gray-400 uppercase font-black">Firma Derecha (Director)</label>
+                <input type="text" id="input-firm-right-name" value="Leonardo Molina G." class="w-full bg-[#232733] border border-gray-600 rounded px-2.5 py-1 text-xs text-white focus:outline-none">
+                <input type="text" id="input-firm-right-charge" value="Director Comercial" class="w-full bg-[#232733] border border-gray-600 rounded px-2.5 py-1 text-xs text-white focus:outline-none">
+                
+                <div class="pt-1">
+                  <label class="block text-[9px] text-gray-500 uppercase mb-1 font-bold">Subir Imagen Firma (PNG/JPG)</label>
+                  <input type="file" id="firm-right-file" accept="image/*" onchange="handleSignatureUpload(event, 'right')" class="w-full text-[10px] text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[9px] file:bg-gray-700 file:text-white hover:file:bg-gray-600 cursor-pointer">
+                </div>
+                
+                <!-- Preview Firma Derecha subida -->
+                <div id="container-preview-firm-right" class="hidden flex items-center justify-between bg-[#1e2230] p-1.5 rounded mt-2 border border-gray-700">
+                  <img id="preview-firm-right" class="max-h-8 object-contain bg-white rounded p-0.5" src="" alt="Firma Derecha">
+                  <button onclick="removeSignature('right')" class="text-red-500 hover:text-red-400 text-[10px] font-bold px-2">Quitar</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </aside>
+
+    <!-- ÁREA DE VISTA PREVIA (Derecha) -->
+    <section class="flex-1 bg-[#090b10] flex flex-col items-center justify-between p-6 overflow-hidden">
+      
+      <!-- Selectores de Documento (Certificado vs Diploma) -->
+      <div class="no-print bg-[#1a1d26] p-1 rounded-lg border border-gray-800 flex gap-1 z-40">
+        <button onclick="setViewType('certificado')" id="btn-view-certificado" class="px-5 py-1.5 rounded-md text-xs font-black uppercase tracking-wider bg-[#E8490F] text-white transition-all">
+          📄 Ver Certificado
+        </button>
+        <button onclick="setViewType('diploma')" id="btn-view-diploma" class="px-5 py-1.5 rounded-md text-xs font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all">
+          🎓 Ver Diploma
+        </button>
+      </div>
+
+      <!-- Lienzo dinámico de alta fidelidad -->
+      <div id="document-canvas" class="document-container print-area">
+        <!-- Render dinámico según selección y estado -->
+      </div>
+      
+      <!-- Margen inferior de cortesía -->
+      <div class="no-print h-4"></div>
+
+    </section>
+
+  </main>
+
+  <!-- CONTENEDOR ESPECIAL DE IMPRESIÓN MASIVA (Renderizado fuera del viewport para cálculo de layout exacto) -->
+  <div id="bulk-print-container"></div>
+
+  <script>
+    // === ESTADO GLOBAL ===
+    let students = [
+      {
+        nombre: "Barraza Miranda Jorge Emilio",
+        rut: "10.219.259-1",
+        aprobacionTeorica: "100%",
+        aprobacionPráctica: "100%",
+        horas: "40",
+        fecha: "Santiago, 11 de junio de 2026",
+        qrLink: "https://akadem.cl/verificar/cert?id=10219259-1",
+        checked: true
+      },
+      {
+        nombre: "Pérez González Juan Pablo",
+        rut: "18.456.912-K",
+        aprobacionTeorica: "100%",
+        aprobacionPráctica: "95%",
+        horas: "40",
+        fecha: "Santiago, 11 de junio de 2026",
+        qrLink: "https://akadem.cl/verificar/cert?id=18456912-K",
+        checked: true
+      },
+      {
+        nombre: "Tapia Herrera Constanza Belén",
+        rut: "15.321.748-2",
+        aprobacionTeorica: "98%",
+        aprobacionPráctica: "100%",
+        horas: "40",
+        fecha: "Santiago, 11 de junio de 2026",
+        qrLink: "https://akadem.cl/verificar/cert?id=15321748-2",
+        checked: true
+      }
+    ];
+
+    let activeStudentIndex = 0;
+    let currentViewType = "certificado"; // 'certificado' o 'diploma'
+    
+    // Almacenamiento de firmas cargadas en Base64
+    let uploadedFirmLeft = null;
+    let uploadedFirmRight = null;
+
+    // === INICIALIZACIÓN ===
+    window.addEventListener("load", () => {
+      renderStudentsList();
+      loadActiveStudentToForm();
+      updateDocumentPreview();
+      scaleDocument();
+      
+      // Listeners de temario general
+      document.getElementById("input-course-name").addEventListener("input", updateDocumentPreview);
+      document.getElementById("input-systems-name").addEventListener("input", updateDocumentPreview);
+      document.getElementById("input-theoretic-list").addEventListener("input", updateDocumentPreview);
+      document.getElementById("input-practical-list").addEventListener("input", updateDocumentPreview);
+      document.getElementById("input-equipments-list").addEventListener("input", updateDocumentPreview);
+
+      // Listeners de firmas text
+      document.getElementById("input-firm-left-name").addEventListener("input", updateDocumentPreview);
+      document.getElementById("input-firm-left-charge").addEventListener("input", updateDocumentPreview);
+      document.getElementById("input-firm-right-name").addEventListener("input", updateDocumentPreview);
+      document.getElementById("input-firm-right-charge").addEventListener("input", updateDocumentPreview);
+
+      // Listeners de importación
+      document.getElementById("csv-file-input").addEventListener("change", handleCSVUpload);
+      setupActiveStudentEditor();
+    });
+
+    window.addEventListener('resize', scaleDocument);
+
+    // === MODAL DE AVISOS PREMIUM DE AKADEM (Sustituto seguro de alert()) ===
+    function showCustomModal(title, message, isSuccess = false) {
+      document.getElementById("modal-title").textContent = title;
+      document.getElementById("modal-message").textContent = message;
+      const iconBox = document.getElementById("modal-icon");
+      if (isSuccess) {
+        iconBox.className = "w-10 h-10 rounded-full bg-green-600/20 text-green-500 flex items-center justify-center text-lg";
+        iconBox.innerHTML = "✓";
+      } else {
+        iconBox.className = "w-10 h-10 rounded-full bg-orange-600/20 text-orange-500 flex items-center justify-center text-lg";
+        iconBox.innerHTML = "💡";
+      }
+      document.getElementById("custom-modal").classList.remove("hidden");
+    }
+
+    function closeCustomModal() {
+      document.getElementById("custom-modal").classList.add("hidden");
+    }
+
+    // === GESTIÓN DE SUBIDA DE IMÁGENES DE FIRMAS ===
+    function handleSignatureUpload(event, position) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Data = e.target.result;
+        if (position === 'left') {
+          uploadedFirmLeft = base64Data;
+          document.getElementById("preview-firm-left").src = base64Data;
+          document.getElementById("container-preview-firm-left").classList.remove("hidden");
+        } else {
+          uploadedFirmRight = base64Data;
+          document.getElementById("preview-firm-right").src = base64Data;
+          document.getElementById("container-preview-firm-right").classList.remove("hidden");
+        }
+        updateDocumentPreview();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // === ELIMINAR FIRMAS CARGADAS ===
+    function removeSignature(position) {
+      if (position === 'left') {
+        uploadedFirmLeft = null;
+        document.getElementById("firm-left-file").value = "";
+        document.getElementById("container-preview-firm-left").classList.add("hidden");
+      } else {
+        uploadedFirmRight = null;
+        document.getElementById("firm-right-file").value = "";
+        document.getElementById("container-preview-firm-right").classList.add("hidden");
+      }
+      updateDocumentPreview();
+    }
+
+    // === SISTEMA DE TABS SIDEBAR ===
+    function switchTab(tabId) {
+      const tabs = ['tab-alumnos', 'tab-temario', 'tab-firmas'];
+      tabs.forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+        document.getElementById(`btn-${id}`).classList.remove('text-[#E8490F]', 'border-[#E8490F]');
+        document.getElementById(`btn-${id}`).classList.add('text-gray-400', 'border-transparent');
+      });
+      document.getElementById(tabId).classList.remove('hidden');
+      document.getElementById(`btn-${tabId}`).classList.add('text-[#E8490F]', 'border-[#E8490F]');
+      document.getElementById(`btn-${tabId}`).classList.remove('text-gray-400', 'border-transparent');
+    }
+
+    // === CONFIGURAR VISTA DE DOCUMENTO ===
+    function setViewType(type) {
+      currentViewType = type;
+      const btnCert = document.getElementById("btn-view-certificado");
+      const btnDipl = document.getElementById("btn-view-diploma");
+
+      if (type === 'certificado') {
+        btnCert.className = "px-5 py-1.5 rounded-md text-xs font-black uppercase tracking-wider bg-[#E8490F] text-white transition-all";
+        btnDipl.className = "px-5 py-1.5 rounded-md text-xs font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all";
+      } else {
+        btnDipl.className = "px-5 py-1.5 rounded-md text-xs font-black uppercase tracking-wider bg-[#E8490F] text-white transition-all";
+        btnCert.className = "px-5 py-1.5 rounded-md text-xs font-black uppercase tracking-wider text-gray-400 hover:text-white transition-all";
+      }
+
+      updateDocumentPreview();
+    }
+
+    // === CONTROL DE SELECCIÓN GLOBAL (Marcar/Desmarcar todos) ===
+    function toggleAllSelection(checkAll) {
+      students.forEach(st => {
+        st.checked = checkAll;
+      });
+      renderStudentsList();
+    }
+
+    // === LISTA DE ALUMNOS (Con Checkbox Individual) ===
+    function renderStudentsList(filter = "") {
+      const container = document.getElementById("students-list");
+      container.innerHTML = "";
+      
+      const filtered = students.filter(st => st.nombre.toLowerCase().includes(filter.toLowerCase()));
+      
+      filtered.forEach((st, index) => {
+        const originalIndex = students.indexOf(st);
+        const isActive = originalIndex === activeStudentIndex;
+        
+        const item = document.createElement("div");
+        item.className = `p-2 text-xs flex items-center justify-between cursor-pointer transition-all ${isActive ? 'bg-[#E8490F]/20 text-white font-bold border-l-4 border-[#E8490F]' : 'text-gray-300 hover:bg-gray-800'}`;
+        
+        item.onclick = (e) => {
+          if(e.target.tagName.toLowerCase() !== 'input') {
+            selectStudent(originalIndex);
+          }
+        };
+        
+        item.innerHTML = `
+          <div class="flex items-center gap-2.5 truncate pr-2">
+            <input type="checkbox" ${st.checked ? 'checked' : ''} class="w-3.5 h-3.5 accent-[#E8490F] cursor-pointer rounded bg-gray-900 border-gray-700" onclick="event.stopPropagation(); toggleStudentCheck(${originalIndex})">
+            <div class="truncate">
+              <p class="truncate text-white font-medium">${st.nombre}</p>
+              <p class="text-[10px] text-gray-500 font-mono">${st.rut}</p>
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0 text-[9px] font-mono">
+            <span class="bg-[#12151e] text-[#E8490F] px-1 rounded">T:${st.aprobacionTeorica}</span>
+            <span class="bg-[#12151e] text-green-400 px-1 rounded ml-1">P:${st.aprobacionPráctica}</span>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+
+      const selectedCount = students.filter(s => s.checked).length;
+      document.getElementById("students-counter").textContent = `${selectedCount}/${students.length} Seleccionados`;
+      
+      document.getElementById("student-search").oninput = (e) => {
+        renderStudentsList(e.target.value);
+      };
+    }
+
+    function toggleStudentCheck(index) {
+      students[index].checked = !students[index].checked;
+      renderStudentsList(document.getElementById("student-search").value);
+    }
+
+    function selectStudent(index) {
+      activeStudentIndex = index;
+      renderStudentsList(document.getElementById("student-search").value);
+      loadActiveStudentToForm();
+      updateDocumentPreview();
+    }
+
+    function loadActiveStudentToForm() {
+      const st = students[activeStudentIndex];
+      document.getElementById("edit-active-name").value = st.nombre;
+      document.getElementById("edit-active-rut").value = st.rut;
+      document.getElementById("edit-active-hours").value = st.horas;
+      document.getElementById("edit-active-date").value = st.fecha;
+      document.getElementById("edit-active-score-teorico").value = st.aprobacionTeorica;
+      document.getElementById("edit-active-score-practico").value = st.aprobacionPráctica;
+      document.getElementById("edit-active-qr").value = st.qrLink;
+    }
+
+    function setupActiveStudentEditor() {
+      const updateActive = () => {
+        const st = students[activeStudentIndex];
+        st.nombre = document.getElementById("edit-active-name").value;
+        st.rut = document.getElementById("edit-active-rut").value;
+        st.horas = document.getElementById("edit-active-hours").value;
+        st.fecha = document.getElementById("edit-active-date").value;
+        st.aprobacionTeorica = document.getElementById("edit-active-score-teorico").value;
+        st.aprobacionPráctica = document.getElementById("edit-active-score-practico").value;
+        st.qrLink = document.getElementById("edit-active-qr").value;
+        
+        renderStudentsList(document.getElementById("student-search").value);
+        updateDocumentPreview();
+      };
+
+      document.getElementById("edit-active-name").addEventListener("input", updateActive);
+      document.getElementById("edit-active-rut").addEventListener("input", updateActive);
+      document.getElementById("edit-active-hours").addEventListener("input", updateActive);
+      document.getElementById("edit-active-date").addEventListener("input", updateActive);
+      document.getElementById("edit-active-score-teorico").addEventListener("input", updateActive);
+      document.getElementById("edit-active-score-practico").addEventListener("input", updateActive);
+      document.getElementById("edit-active-qr").addEventListener("input", updateActive);
+    }
+
+    // === IMPORTACIÓN DE DATOS ===
+    function handleCSVUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        processRawImport(e.target.result);
+      };
+      reader.readAsText(file);
+    }
+
+    function parseBulkInput() {
+      const text = document.getElementById("bulk-paste-input").value;
+      if (!text.trim()) return;
+      processRawImport(text);
+    }
+
+    function processRawImport(text) {
+      const lines = text.split("\n");
+      const tempStudents = [];
+
+      lines.forEach(line => {
+        if (!line.trim()) return;
+        const cols = line.split(",").map(c => c.trim().replace(/^["']|["']$/g, ""));
+        
+        if (cols[0].toLowerCase().includes("nombre") || cols[1]?.toLowerCase().includes("rut")) return;
+
+        if (cols.length >= 2) {
+          tempStudents.push({
+            nombre: cols[0] || "Nombre Sin Definir",
+            rut: cols[1] || "11.111.111-1",
+            aprobacionTeorica: cols[2] || "100%",
+            aprobacionPráctica: cols[3] || "100%",
+            horas: cols[4] || "40",
+            fecha: cols[5] || "Santiago, 11 de junio de 2026",
+            qrLink: cols[6] || `https://akadem.cl/verificar/cert?id=${cols[1] || 'default'}`,
+            checked: true
+          });
+        }
+      });
+
+      if (tempStudents.length > 0) {
+        students = tempStudents;
+        activeStudentIndex = 0;
+        renderStudentsList();
+        loadActiveStudentToForm();
+        updateDocumentPreview();
+        showCustomModal("Carga Masiva Exitosa", `Se han importado exitosamente ${tempStudents.length} alumnos para la generación de documentos.`, true);
+      } else {
+        showCustomModal("Error en Importación", "Formato no válido. Asegúrate de separar las columnas con comas (,) e incluir al menos Nombre y RUT.");
+      }
+    }
+
+    // === MÓDULO RENDERIZADOR DE ALTA FIDELIDAD ===
+    function getDocumentHTML(type, st, qrId) {
+      const courseName = document.getElementById("input-course-name").value;
+      const systemsName = document.getElementById("input-systems-name").value;
+      const firmLeftName = document.getElementById("input-firm-left-name").value;
+      const firmLeftCharge = document.getElementById("input-firm-left-charge").value;
+      const firmRightName = document.getElementById("input-firm-right-name").value;
+      const firmRightCharge = document.getElementById("input-firm-right-charge").value;
+
+      // Configuración dinámica de firmas (Imagen cargada vs Vectores por defecto)
+      const leftSignatureElement = uploadedFirmLeft 
+        ? `<img src="${uploadedFirmLeft}" class="max-h-[56px] h-14 mx-auto object-contain" style="max-height: 56px;" />`
+        : `<svg width="150" height="50" viewBox="0 0 200 80" class="absolute pointer-events-none mx-auto">
+            <path d="M 20 60 Q 40 10 60 50 T 100 30 T 140 40 T 180 30" stroke="#1A2A3A" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <path d="M 50 30 L 150 50" stroke="#1A2A3A" stroke-width="2" stroke-linecap="round"/>
+           </svg>`;
+
+      const rightSignatureElement = uploadedFirmRight 
+        ? `<img src="${uploadedFirmRight}" class="max-h-[56px] h-14 mx-auto object-contain" style="max-height: 56px;" />`
+        : `<svg width="150" height="50" viewBox="0 0 200 80" class="absolute pointer-events-none mx-auto">
+            <path d="M 15 45 C 30 10, 50 15, 60 40 C 70 65, 80 50, 95 30 C 110 10, 130 50, 150 45 T 185 35" stroke="#1A2A3A" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <path d="M 12 38 Q 40 20 80 40" stroke="#1A2A3A" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+           </svg>`;
+
+      if (type === 'certificado') {
+        const theoList = document.getElementById("input-theoretic-list").value.split("\n").filter(l => l.trim() !== "").slice(0,7);
+        const pracList = document.getElementById("input-practical-list").value.split("\n").filter(l => l.trim() !== "").slice(0,7);
+        const equipList = document.getElementById("input-equipments-list").value.split("\n").filter(l => l.trim() !== "").slice(0,5);
+
+        let theoRows = "";
+        theoList.forEach((line, i) => {
+          theoRows += `<tr><td class="text-center font-bold text-[#E8490F]">${i+1}</td><td>${line}</td><td class="text-center font-mono font-bold">${st.aprobacionTeorica}</td></tr>`;
+        });
+
+        let pracRows = "";
+        pracList.forEach((line, i) => {
+          pracRows += `<tr><td class="text-center font-bold text-[#E8490F]">${i+1}</td><td>${line}</td><td class="text-center font-mono font-bold">${st.aprobacionPráctica}</td></tr>`;
+        });
+
+        let equipRows = "";
+        equipList.forEach(line => {
+          const parts = line.split(",").map(p => p.trim());
+          equipRows += `<tr><td class="font-bold py-1">${parts[0] || ""}</td><td class="text-gray-500 py-1">${parts[1] || ""}</td></tr>`;
+        });
+
+        return `
+          <div class="cert-corner corner-tl"></div>
+          <div class="cert-corner corner-tr"></div>
+          <div class="cert-corner corner-bl"></div>
+          <div class="cert-corner corner-br"></div>
+          <div class="cert-border-outer"></div>
+          <div class="cert-border-inner"></div>
+          <svg class="cert-watermark-owl" viewBox="0 0 60 60" fill="none"><path d="M30 8L18 18L15 38L30 52L45 38L42 18Z" stroke="#2D3142" stroke-width="1.5"/></svg>
+
+          <div class="relative z-20 p-8 h-full flex flex-col justify-between box-border" style="color: #2D3142;">
+            
+            <!-- Cabecera -->
+            <div class="flex items-center justify-between border-b border-gray-200 pb-2.5">
+              <div class="flex items-center gap-3">
+                <svg width="45" height="45" viewBox="0 0 60 60" fill="none" class="flex-shrink-0">
+                  <path d="M30 8L18 18L15 38L30 52L45 38L42 18Z" stroke="#2D3142" stroke-width="2.5" fill="none"/>
+                  <path d="M18 18L10 14L14 24L18 26" stroke="#E8490F" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+                  <path d="M42 18L50 14L46 24L42 26" stroke="#E8490F" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+                  <ellipse cx="22" cy="22" rx="6" ry="6" stroke="#E8490F" stroke-width="2"/>
+                  <ellipse cx="38" cy="22" rx="6" ry="6" stroke="#E8490F" stroke-width="2"/>
+                </svg>
+                <div>
+                  <div class="text-xl font-black tracking-wide leading-tight"><span class="text-[#E8490F]">AKA</span>DEM</div>
+                  <div class="text-[8px] text-[#6B6F7E] uppercase font-bold tracking-widest">Impulsando capacidades — OTEC Certificada</div>
+                </div>
+              </div>
+              <div class="text-right flex flex-col items-end">
+                <span class="text-[9px] text-gray-500 font-mono">${st.fecha}</span>
+                <div class="mt-0.5 bg-red-50 text-[#E8490F] border border-red-100 px-2.5 py-0.5 rounded text-[8px] font-bold tracking-wide uppercase">Registro N° AK-76898619</div>
+                
+                <!-- Logotipo de ASR Certificaciones alineado y con proporción perfecta -->
+                <div class="mt-1 bg-white p-1 rounded border border-gray-200 shadow-sm flex items-center justify-center">
+                  <svg width="105" height="48" viewBox="0 0 240 110" fill="none" xmlns="http://www.w3.org/2000/svg" class="flex-shrink-0">
+                    <!-- Marco Exterior ASR -->
+                    <path d="M 10 70 L 10 10 L 230 10 L 230 70" stroke="#0F2C43" stroke-width="4" fill="none" stroke-linecap="square"/>
+                    <rect x="10" y="70" width="220" height="4" fill="#00A2E8"/>
+                    
+                    <!-- Letras ASR -->
+                    <text x="25" y="58" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="56" fill="#0F2C43" letter-spacing="-3">ASR</text>
+                    
+                    <!-- Arco Multicolor -->
+                    <path d="M 22 56 A 110 55 0 0 1 72 26" stroke="#00A2E8" stroke-width="5" fill="none" stroke-linecap="round" />
+                    <path d="M 72 26 A 110 55 0 0 1 120 17" stroke="#FFC000" stroke-width="5" fill="none" />
+                    <path d="M 120 17 A 110 55 0 0 1 168 26" stroke="#FF7F27" stroke-width="5" fill="none" />
+                    <path d="M 168 26 A 110 55 0 0 1 218 56" stroke="#22B14C" stroke-width="5" fill="none" stroke-linecap="round" />
+
+                    <!-- Subtextos corporativos -->
+                    <text x="12" y="88" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="bold" font-size="16" fill="#0F2C43">ASR Certificaciones</text>
+                    <text x="12" y="101" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="bold" font-size="9" fill="#0F2C43" letter-spacing="4.8">MEJORAMOS SU FUTURO</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Declaración de Acreditación -->
+            <div class="text-center my-2">
+              <h2 class="text-base font-black tracking-wider uppercase m-0 leading-tight">Certificación de Competencias Laborales</h2>
+              <div class="text-xs font-black text-[#E8490F] tracking-widest mt-0.5 uppercase">${courseName} — ${systemsName}</div>
+              <p class="text-[10px] text-gray-600 max-w-[850px] mx-auto mt-1 leading-snug"><strong>Akadem SpA.</strong>, RUT: 76.898.619-3, certifica que el profesional ha cumplido con los rigores operativos requeridos:</p>
+              <div class="inline-block bg-slate-50 border border-slate-200 rounded px-4 py-1.5 mt-1.5">
+                <span class="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Acreditado:</span>
+                <span class="text-xs font-bold ml-1.5">${st.nombre}</span>
+                <span class="text-[9px] text-gray-400 ml-3">RUT:</span>
+                <span class="text-[9.5px] font-mono font-bold text-gray-700 ml-1">${st.rut}</span>
+              </div>
+            </div>
+
+            <!-- Tablas Técnicas -->
+            <div class="grid grid-cols-12 gap-3.5 my-1.5">
+              <div class="col-span-5">
+                <table class="cert-table">
+                  <thead>
+                    <tr><th class="w-7 text-center">N°</th><th>Evaluación de Conocimientos Teóricos</th><th class="w-14 text-center">% Aprob.</th></tr>
+                  </thead>
+                  <tbody>${theoRows}</tbody>
+                </table>
+              </div>
+              <div class="col-span-5">
+                <table class="cert-table">
+                  <thead>
+                    <tr><th class="w-7 text-center">N°</th><th>Evaluación de Competencias Prácticas</th><th class="w-14 text-center">% Aprob.</th></tr>
+                  </thead>
+                  <tbody>${pracRows}</tbody>
+                </table>
+              </div>
+              <div class="col-span-2">
+                <table class="cert-table border border-slate-200">
+                  <thead>
+                    <tr><th colspan="2" class="text-center bg-slate-700 py-1">Equipos Evaluados</th></tr>
+                  </thead>
+                  <tbody class="text-[8.5px]">${equipRows}</tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Bloque de Firmas y Validación Digital -->
+            <div class="flex items-end justify-between border-t border-gray-200 pt-3 mt-1">
+              <div class="text-center w-[230px]">
+                <div class="h-14 flex items-center justify-center relative">
+                  ${leftSignatureElement}
+                </div>
+                <div class="border-t border-gray-300 pt-1">
+                  <p class="text-[10px] font-bold">${firmLeftName}</p>
+                  <p class="text-[8px] text-[#6B6F7E]">${firmLeftCharge}</p>
+                </div>
+              </div>
+
+              <div class="flex flex-col items-center">
+                <div class="p-1.5 border border-gray-200 rounded-lg bg-white shadow-sm flex items-center justify-center">
+                  <div id="${qrId}" style="width:64px; height:64px;"></div>
+                </div>
+                <p class="text-[7.5px] text-[#6B6F7E] font-bold uppercase tracking-wider mt-1.5">Sello de Validación Digital</p>
+                <p class="text-[8px] text-red-500 font-extrabold mt-0.5">VIGENCIA: 2 AÑOS DESDE LA EMISIÓN</p>
+              </div>
+
+              <div class="text-center w-[230px]">
+                <div class="h-14 flex items-center justify-center relative">
+                  ${rightSignatureElement}
+                </div>
+                <div class="border-t border-gray-300 pt-1">
+                  <p class="text-[10px] font-bold">${firmRightName}</p>
+                  <p class="text-[8px] text-[#6B6F7E]">${firmRightCharge}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="text-center text-[7px] text-gray-400 mt-2.5 flex justify-between px-1">
+              <span>Certificado emitido por Akadem SpA • Soporte: administracion@akadem.cl</span>
+              <span class="font-bold tracking-wider">VERIFICACIÓN INMEDIATA DISPONIBLE ESCANEANDO EL CÓDIGO QR</span>
+              <span>+56 2 2993 5626 • www.akadem.cl</span>
+            </div>
+
+          </div>
+        `;
+      } else {
+        // === HTML DEL DIPLOMA ACADÉMICO ===
+        return `
+          <div class="diploma-border-gold"></div>
+          <div class="diploma-border-dark"></div>
+          <svg class="diploma-watermark-owl" viewBox="0 0 60 60" fill="none"><path d="M30 8L18 18L15 38L30 52L45 38L42 18Z" stroke="#2D3142" stroke-width="1.5"/></svg>
+
+          <div class="relative z-30 p-16 h-full flex flex-col justify-between text-center" style="color: #2D3142;">
+            
+            <!-- Logotipo Diploma -->
+            <div class="flex flex-col items-center">
+               <div class="text-2xl font-black tracking-tighter">
+                  <span class="text-[#E8490F]">AKA</span>DEM
+               </div>
+               <div class="w-14 h-[3px] bg-orange-600 mt-1.5"></div>
+            </div>
+
+            <!-- Título Principal -->
+            <div class="mt-2">
+              <h2 class="text-lg font-serif italic text-gray-500">Se otorga el presente</h2>
+              <h1 class="text-5xl font-black uppercase tracking-widest mt-1">Diploma</h1>
+              <p class="text-sm text-orange-600 font-bold uppercase tracking-[0.25em] mt-1">Mención de Honor</p>
+            </div>
+
+            <!-- Nombre de Alumno Destacado -->
+            <div class="my-4">
+              <p class="text-[10px] text-gray-400 uppercase tracking-widest">A don / doña:</p>
+              <h3 class="text-4xl font-black border-b-2 border-gray-100 inline-block px-8 py-1.5 mt-1.5">${st.nombre}</h3>
+              <p class="text-xs font-mono text-gray-400 mt-1.5">R.U.T.: ${st.rut}</p>
+            </div>
+
+            <!-- Cuerpo del Logro -->
+            <div class="max-w-2xl mx-auto">
+              <p class="text-sm text-gray-500 uppercase tracking-wide">Por haber aprobado satisfactoriamente el programa en:</p>
+              <p class="text-xl font-black uppercase mt-1 text-[#2D3142]">${courseName}</p>
+              <p class="text-[11px] text-gray-500 mt-2">Cumpliendo de manera exitosa con un total de <strong>${st.horas} horas académicas</strong>.</p>
+            </div>
+
+            <!-- Firmas e Identificador del Lote -->
+            <div class="flex justify-between items-end w-full px-8 mt-4">
+              <div class="text-center w-[230px]">
+                <div class="h-12 flex items-center justify-center relative">
+                  ${leftSignatureElement}
+                </div>
+                <div class="border-t border-gray-300 pt-1.5">
+                  <p class="text-[10px] font-bold">${firmLeftName}</p>
+                  <p class="text-[8px] text-gray-400 uppercase tracking-tight">${firmLeftCharge}</p>
+                </div>
+              </div>
+
+              <div class="flex flex-col items-center">
+                <div class="p-1 border border-gray-200 bg-white rounded">
+                  <div id="${qrId}" style="width:55px; height:55px;"></div>
+                </div>
+                <p class="text-[6.5px] text-gray-400 mt-1 uppercase font-bold tracking-widest">ID: ${st.rut.split('-')[0]}</p>
+              </div>
+
+              <div class="text-center w-[230px]">
+                <div class="h-12 flex items-center justify-center relative">
+                  ${rightSignatureElement}
+                </div>
+                <div class="border-t border-gray-300 pt-1.5">
+                  <p class="text-[10px] font-bold">${firmRightName}</p>
+                  <p class="text-[8px] text-gray-400 uppercase tracking-tight">${firmRightCharge}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <p class="text-[8px] text-gray-400 font-mono italic">Emitido en ${st.fecha} — akadem.cl</p>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // === RE-DIBUJAR VISTA PREVIA INDIVIDUAL ===
+    // (Mantiene las mismas lógicas actualizadas previamente)
+    function updateDocumentPreview() {
+      if (students.length === 0) return;
+      const st = students[activeStudentIndex];
+      const canvas = document.getElementById("document-canvas");
+      
+      const qrId = `qr-preview-active`;
+      canvas.innerHTML = getDocumentHTML(currentViewType, st, qrId);
+
+      new QRCode(document.getElementById(qrId), {
+        text: st.qrLink,
+        width: currentViewType === 'certificado' ? 64 : 55,
+        height: currentViewType === 'certificado' ? 64 : 55,
+        colorDark : "#2D3142",
+        colorLight : "#FFFFFF",
+        correctLevel : QRCode.CorrectLevel.H
+      });
+
+      updateDocumentTitle(st.nombre, document.getElementById("input-course-name").value, currentViewType);
+    }
+
+    // LÓGICA DE NOMBRADO EXIGIDA: Nombre Curso - Alumno
+    function updateDocumentTitle(studentName, courseName, type) {
+      const cleanName = studentName.trim().replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s-]/g, '').replace(/\s+/g, '_');
+      const cleanCourse = courseName.trim().replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s-]/g, '').replace(/\s+/g, '_');
+      document.title = `${cleanCourse}-${cleanName}_${type.toUpperCase()}`;
+    }
+
+    // === IMPRESIÓN DOCUMENTO INDIVIDUAL ===
+    function printActiveDocument() {
+      const st = students[activeStudentIndex];
+      const courseName = document.getElementById("input-course-name").value;
+      const bulkContainer = document.getElementById("bulk-print-container");
+      bulkContainer.innerHTML = "";
+      
+      document.body.classList.add('print-all-mode');
+      updateDocumentTitle(st.nombre, courseName, currentViewType);
+
+      const page = document.createElement("div");
+      page.className = "print-all-page relative box-border overflow-hidden";
+      const qrId = `qr-batch-single-active`;
+      page.innerHTML = getDocumentHTML(currentViewType, st, qrId);
+      bulkContainer.appendChild(page);
+
+      new QRCode(document.getElementById(qrId), {
+        text: st.qrLink,
+        width: currentViewType === 'certificado' ? 64 : 55,
+        height: currentViewType === 'certificado' ? 64 : 55,
+        colorDark : "#2D3142",
+        colorLight : "#FFFFFF",
+        correctLevel : QRCode.CorrectLevel.H
+      });
+
+      setTimeout(() => {
+        window.print();
+        document.body.classList.remove('print-all-mode');
+        updateDocumentPreview();
+      }, 250);
+    }
+
+    // === IMPRESIÓN COMBINADA PARA EL ALUMNO ACTIVO ===
+    function printActiveBoth() {
+      const st = students[activeStudentIndex];
+      const courseName = document.getElementById("input-course-name").value;
+      const cleanCourse = courseName.trim().replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s-]/g, '').replace(/\s+/g, '_');
+      const cleanName = st.nombre.trim().replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s-]/g, '').replace(/\s+/g, '_');
+
+      const bulkContainer = document.getElementById("bulk-print-container");
+      bulkContainer.innerHTML = "";
+
+      document.body.classList.add('print-all-mode');
+      document.title = `${cleanCourse}-${cleanName}_COMPLETO`;
+
+      const pageCert = document.createElement("div");
+      pageCert.className = "print-all-page relative box-border overflow-hidden";
+      const qrCertId = "qr-active-both-cert";
+      pageCert.innerHTML = getDocumentHTML('certificado', st, qrCertId);
+      bulkContainer.appendChild(pageCert);
+
+      const pageDipl = document.createElement("div");
+      pageDipl.className = "print-all-page relative box-border overflow-hidden";
+      const qrDiplId = "qr-active-both-dipl";
+      pageDipl.innerHTML = getDocumentHTML('diploma', st, qrDiplId);
+      bulkContainer.appendChild(pageDipl);
+
+      new QRCode(document.getElementById(qrCertId), {
+        text: st.qrLink,
+        width: 64, height: 64,
+        colorDark: "#2D3142", colorLight: "#FFFFFF",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+
+      new QRCode(document.getElementById(qrDiplId), {
+        text: st.qrLink,
+        width: 55, height: 55,
+        colorDark: "#2D3142", colorLight: "#FFFFFF",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+
+      setTimeout(() => {
+        window.print();
+        document.body.classList.remove('print-all-mode');
+        updateDocumentTitle(st.nombre, courseName, currentViewType);
+      }, 350);
+    }
+
+    // === GENERACIÓN E IMPRESIÓN POR LOTES MASIVOS ===
+    function printBatch(type) {
+      const selectedStudents = students.filter(st => st.checked);
+      
+      if (selectedStudents.length === 0) {
+        showCustomModal("Ningún Alumno Seleccionado", "Por favor, marca al menos un alumno utilizando las casillas de selección en la cola de alumnos para poder realizar la impresión masiva.");
+        return;
+      }
+
+      const courseName = document.getElementById("input-course-name").value;
+      const cleanCourse = courseName.trim().replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s-]/g, '').replace(/\s+/g, '_');
+
+      if (selectedStudents.length === 1) {
+        const singleSt = selectedStudents[0];
+        if (type === 'ambos') {
+          printActiveBoth();
+        } else {
+          document.body.classList.remove('print-all-mode');
+          updateDocumentTitle(singleSt.nombre, courseName, type);
+          
+          const canvas = document.getElementById("document-canvas");
+          const qrId = `qr-preview-active`;
+          canvas.innerHTML = getDocumentHTML(type, singleSt, qrId);
+          
+          new QRCode(document.getElementById(qrId), {
+            text: singleSt.qrLink,
+            width: type === 'certificado' ? 64 : 55,
+            height: type === 'certificado' ? 64 : 55,
+            colorDark : "#2D3142",
+            colorLight : "#FFFFFF",
+            correctLevel : QRCode.CorrectLevel.H
+          });
+
+          setTimeout(() => {
+            window.print();
+            updateDocumentPreview();
+          }, 150);
+        }
+        return;
+      }
+
+      const bulkContainer = document.getElementById("bulk-print-container");
+      bulkContainer.innerHTML = "";
+      document.body.classList.add('print-all-mode');
+      document.title = `${cleanCourse}-Lote_Masivo_${type.toUpperCase()}`;
+
+      selectedStudents.forEach((st, idx) => {
+        if (type === 'ambos') {
+          const pageCert = document.createElement("div");
+          pageCert.className = "print-all-page relative box-border overflow-hidden";
+          const qrCertId = `qr-batch-cert-${idx}`;
+          pageCert.innerHTML = getDocumentHTML('certificado', st, qrCertId);
+          bulkContainer.appendChild(pageCert);
+
+          const pageDipl = document.createElement("div");
+          pageDipl.className = "print-all-page relative box-border overflow-hidden";
+          const qrDiplId = `qr-batch-dipl-${idx}`;
+          pageDipl.innerHTML = getDocumentHTML('diploma', st, qrDiplId);
+          bulkContainer.appendChild(pageDipl);
+
+          new QRCode(document.getElementById(qrCertId), {
+            text: st.qrLink,
+            width: 64, height: 64,
+            colorDark: "#2D3142", colorLight: "#FFFFFF",
+            correctLevel: QRCode.CorrectLevel.H
+          });
+
+          new QRCode(document.getElementById(qrDiplId), {
+            text: st.qrLink,
+            width: 55, height: 55,
+            colorDark: "#2D3142", colorLight: "#FFFFFF",
+            correctLevel: QRCode.CorrectLevel.H
+          });
+
+        } else {
+          const page = document.createElement("div");
+          page.className = "print-all-page relative box-border overflow-hidden";
+          const qrId = `qr-batch-${type}-${idx}`;
+          page.innerHTML = getDocumentHTML(type, st, qrId);
+          bulkContainer.appendChild(page);
+
+          new QRCode(document.getElementById(qrId), {
+            text: st.qrLink,
+            width: type === 'certificado' ? 64 : 55,
+            height: type === 'certificado' ? 64 : 55,
+            colorDark : "#2D3142",
+            colorLight : "#FFFFFF",
+            correctLevel : QRCode.CorrectLevel.H
+          });
+        }
+      });
+
+      setTimeout(() => {
+        window.print();
+        document.body.classList.remove('print-all-mode');
+        const activeSt = students[activeStudentIndex];
+        updateDocumentTitle(activeSt.nombre, courseName, currentViewType);
+      }, 350);
+    }
+
+    // === ESCALADO RESPONSIVO DEL LIENZO ===
+    function scaleDocument() {
+      const wrapper = document.querySelector('section.flex-1');
+      if (!wrapper) return;
+      const canvas = document.getElementById("document-canvas");
+      
+      const wrapperWidth = wrapper.clientWidth - 48;
+      const wrapperHeight = wrapper.clientHeight - 120;
+      
+      const scaleX = wrapperWidth / 1056;
+      const scaleY = wrapperHeight / 747;
+      const finalScale = Math.min(scaleX, scaleY, 1);
+      
+      canvas.style.transform = `scale(${finalScale})`;
+    }
+  </script>
+</body>
+</html>
